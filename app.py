@@ -55,7 +55,7 @@ temps = []
 for i in range(current_index, current_index + 24):
     hour_data = data['properties']['timeseries'][i]
     # Konverter til norsk tid
-    time_obj = datetime.fromisoformat(hour_data['time'].replace('Z', '+00:00'))  # TRENGER DENNE!
+    time_obj = datetime.fromisoformat(hour_data['time'].replace('Z', '+00:00')) 
     time_oslo = time_obj.astimezone(oslo_tz)  
     hour = time_oslo.strftime("%H:%M")
     temp = hour_data['data']['instant']['details']['air_temperature']
@@ -85,7 +85,7 @@ for i in [24, 48, 72]:
     day_data = data['properties']['timeseries'][i]
     temp = day_data['data']['instant']['details']['air_temperature']
     
-    # Prøv å finne værdata - ta det som finnes
+
     if 'next_6_hours' in day_data['data']:
         symbol = day_data['data']['next_6_hours']['summary']['symbol_code']
     elif 'next_12_hours' in day_data['data']:
@@ -95,7 +95,7 @@ for i in [24, 48, 72]:
     else:
         symbol = 'clearsky_day'  # Fallback
     
-    # Konverter dato
+ 
     time_string = day_data['time']
     date_obj = datetime.fromisoformat(time_string.replace('Z', '+00:00'))
     day = date_obj.day
