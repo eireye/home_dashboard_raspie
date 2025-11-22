@@ -54,7 +54,7 @@ temps = []
 
 for i in range(current_index, current_index + 24):
     hour_data = data['properties']['timeseries'][i]
-    # Konverter til norsk tid
+
     time_obj = datetime.fromisoformat(hour_data['time'].replace('Z', '+00:00')) 
     time_oslo = time_obj.astimezone(oslo_tz)  
     hour = time_oslo.strftime("%H:%M")
@@ -62,7 +62,7 @@ for i in range(current_index, current_index + 24):
     
     hours.append(hour)
     temps.append(temp)
-# Lag chart
+
 chart_data = pd.DataFrame({
     'Tid': hours,
     'Temperatur': temps
@@ -72,7 +72,7 @@ chart_data = chart_data.set_index('Tid')
 
 st.line_chart(chart_data)
 
-# Vis min/max
+
 min_temp = min(temps)
 max_temp = max(temps)
 st.write(f"🔵 Lavest: {min_temp}°C  |  🔴 Høyest: {max_temp}°C")
@@ -93,7 +93,7 @@ for i in [24, 48, 72]:
     elif 'next_1_hours' in day_data['data']:
         symbol = day_data['data']['next_1_hours']['summary']['symbol_code']
     else:
-        symbol = 'clearsky_day'  # Fallback
+        symbol = 'clearsky_day' 
     
  
     time_string = day_data['time']
