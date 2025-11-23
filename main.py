@@ -40,9 +40,9 @@ if st.session_state.page == 'weather':
     weather.show()
     
 elif st.session_state.page == 'calendar':
-    st.title("📅 Kalender")
-    st.write("Kommer snart...")
+    import pages.calendar as calendar
+    calendar.show()
     
 elif st.session_state.page == 'meals':
     st.title("🍽️ Middagsplan")
-    st.write("Kommer snart...")
+    st.write("tentativt")

@@ -5,4 +5,4 @@ pandas
 pytz
 plotly
 caldav
-python-dotenv
+python-dotenvvobject
