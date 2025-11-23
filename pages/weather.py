@@ -37,7 +37,7 @@ def show():
     symbol_base = weather_symbol.replace('_day', '').replace('_night', '')
     norwegian_name = weather_norwegian.get(symbol_base, weather_symbol)
 
-    st.title("🏠 Øye-Skjæraasen dashboard")
+    st.title("🏠 xx dashboard")
     st.metric(label="Temperatur nå", value=f"{temp_now}°C")
     st.write(f"### {emoji} {norwegian_name}")
     st.subheader("Temperatur neste 24 timer")
