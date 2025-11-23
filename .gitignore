@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+.DS_Store
+venv/
+env/
+env1/
+.venv/
+*.log
+.env.local
+EOF

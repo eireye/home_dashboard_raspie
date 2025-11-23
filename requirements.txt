@@ -4,3 +4,5 @@ streamlit-autorefresh
 pandas
 pytz
 plotly
+caldav
+python-dotenv
