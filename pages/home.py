@@ -1,24 +1,26 @@
 import streamlit as st
 from dotenv import load_dotenv
 import os
-import caldav
-import requests
-from datetime import datetime, timedelta, date
+from datetime import datetime, date
 import pytz
 
 def show():
     st.title("🏠 Hjem")
     
-    # To kolonner: Vær til venstre, Kalender til høyre
-    col1, col2 = st.columns(2)
+    # Tre kolonner: Vær, Kalender, Middag
+    col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.subheader("Været i dag")
+        st.subheader("☀️ Været i dag")
         show_todays_weather()
     
     with col2:
         st.subheader("📅 I dag")
         show_todays_calendar()
+    
+    with col3:
+        st.subheader("🍽️ Middag")
+        show_todays_meal()
 
 def show_todays_weather():
     """Viser dagens vær - kompakt versjon"""
@@ -62,85 +64,85 @@ def show_todays_weather():
                     today_temps.append(ts['data']['instant']['details']['air_temperature'])
         
         if today_temps:
-            st.write(f"🔵 Min: {min(today_temps)}°C | 🔴 Max: {max(today_temps)}°C")
+            st.write(f"🔵 {min(today_temps)}°C | 🔴 {max(today_temps)}°C")
         
     except Exception as e:
-        st.error(f"Kunne ikke laste vær: {e}")
+        st.error("Kunne ikke laste vær")
 
 def show_todays_calendar():
     """Viser dagens kalender - kompakt versjon"""
-    load_dotenv()
     
     try:
-        url = "https://caldav.icloud.com"
-        username = os.getenv('ICLOUD_EMAIL')
-        password = os.getenv('ICLOUD_PASSWORD')
+        from pages.calendar import get_calendar_events
         
-        client = caldav.DAVClient(url=url, username=username, password=password)
-        principal = client.principal()
-        calendars = principal.calendars()
+        all_events = get_calendar_events()
         
-        oslo_tz = pytz.timezone('Europe/Oslo')
-        now = datetime.now(oslo_tz)
-        start = now.replace(hour=0, minute=0, second=0)
-        end = start + timedelta(days=1)
+        if not all_events:
+            st.warning("Kunne ikke laste kalender")
+            return
         
-        all_events = []
+        # Filtrer bare dagens events
+        today = date.today()
+        todays_events = [e for e in all_events if (isinstance(e['start'], datetime) and e['start'].date() == today) or (isinstance(e['start'], date) and e['start'] == today)]
         
-        for calendar in calendars:
-            if "minner" in calendar.name.lower():
-                continue
-                
-            try:
-                events = calendar.date_search(start=start, end=end)
-                
-                for event in events:
-                    try:
-                        event.load()
-                        if not hasattr(event, 'vobject_instance'):
-                            continue
-                        
-                        vobj = event.vobject_instance
-                        if not hasattr(vobj, 'vevent'):
-                            continue
-                            
-                        vevent = vobj.vevent
-                        summary = vevent.summary.value if hasattr(vevent, 'summary') else 'Uten tittel'
-                        dtstart = vevent.dtstart.value if hasattr(vevent, 'dtstart') else None
-                        
-                        if dtstart is None:
-                            continue
-                        
-                        is_birthday = 'bursdag' in summary.lower() or 'birthday' in summary.lower() or '🎂' in summary or '🎉' in summary
-                        
-                        all_events.append({
-                            'title': summary,
-                            'start': dtstart,
-                            'is_birthday': is_birthday
-                        })
-                    except:
-                        continue
-            except:
-                continue
-        
-        all_events.sort(key=lambda x: x['start'])
-        
-        if all_events:
-            for event in all_events:
+        if todays_events:
+            for event in todays_events:
                 dt = event['start']
+                
+                # ✅ Sjekk om det er datetime (med tid) eller bare date (heldagsevent)
                 if isinstance(dt, datetime):
                     time_str = dt.strftime("%H:%M")
-                    if event['is_birthday']:
+                    if event.get('is_birthday'):
                         st.success(f"🎉 **{time_str}** - {event['title']}")
                     else:
                         st.write(f"🕐 **{time_str}** - {event['title']}")
-                else:
-                    if event['is_birthday']:
-                        st.success(f"🎂 {event['title']}")
+                else:  # Heldagsevent (date, ikke datetime)
+                    if event.get('is_birthday'):
+                        st.success(f"🎂 **{event['title']}**")
                     else:
-                        st.write(f"📅 {event['title']}")
+                        st.write(f"📅 **{event['title']}**")
         else:
-            st.info("Ingen hendelser i dag")
+            st.info("Ingen hendelser")
             
     except Exception as e:
-        st.error("Kunne ikke laste kalender")
+        st.error(f"Kalenderfeil: {e}")
+
+def show_todays_meal():
+    """Viser dagens middag fra Google Sheets"""
+    try:
+        from pages.meals import get_meals
+        
+        meals = get_meals()
+        
+        if not meals:
+            st.info("Ingen meny")
+            return
+        
+        # Finn dagens middag
+        from datetime import datetime
+        today = datetime.now().strftime("%A")
+        norwegian_days = {
+            'Monday': 'Mandag',
+            'Tuesday': 'Tirsdag',
+            'Wednesday': 'Onsdag',
+            'Thursday': 'Torsdag',
+            'Friday': 'Fredag',
+            'Saturday': 'Lørdag',
+            'Sunday': 'Søndag'
+        }
+        today_norwegian = norwegian_days.get(today, '')
+        
+        todays_meal = None
+        for meal in meals:
+            if meal.get('Dag') == today_norwegian:
+                todays_meal = meal.get('Middag', 'Ikke planlagt')
+                break
+        
+        if todays_meal:
+            st.markdown(f"## 🍴")
+            st.write(f"**{todays_meal}**")
+        else:
+            st.info("Ikke planlagt")
+            
+    except Exception as e:
+        st.info("Middag ikke tilgjengelig")
