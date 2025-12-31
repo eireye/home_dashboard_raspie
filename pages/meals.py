@@ -4,50 +4,55 @@ import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-def show():
-    load_dotenv()
-    
-    st.title("🍽️ Ukesmeny")
-    
+@st.cache_data(ttl=600)  # Cache i 10 minutter
+def get_meals():
+    """Henter ukesmeny fra Google Sheets - cached"""
     try:
-        # Google Sheets setup
+        load_dotenv()
         scope = ['https://spreadsheets.google.com/feeds',
                  'https://www.googleapis.com/auth/drive']
         
         creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
         client = gspread.authorize(creds)
         
-        # Åpne sheet
         sheet_id = os.getenv('GOOGLE_SHEET_ID')
         sheet = client.open_by_key(sheet_id).sheet1
         
-        # Hent data
         meals = sheet.get_all_records()
-        
-        # Vis ukesmeny
-        for meal in meals:
-            dag = meal['Dag']
-            middag = meal['Middag']
-            
-            # Highlight dagens dag
-            from datetime import datetime
-            today = datetime.now().strftime("%A")
-            norwegian_days = {
-                'Monday': 'Mandag',
-                'Tuesday': 'Tirsdag',
-                'Wednesday': 'Onsdag',
-                'Thursday': 'Torsdag',
-                'Friday': 'Fredag',
-                'Saturday': 'Lørdag',
-                'Sunday': 'Søndag'
-            }
-            today_norwegian = norwegian_days.get(today, '')
-            
-            if dag == today_norwegian:
-                st.success(f"**{dag}**: {middag} 🍴")
-            else:
-                st.write(f"**{dag}**: {middag}")
-                
+        return meals
     except Exception as e:
-        st.error(f"Kunne ikke laste ukesmeny: {e}")
+        return []
+
+def show():
+    st.title("Ukesmeny")
+    
+    meals = get_meals()
+    
+    if not meals:
+        st.error("Kunne ikke laste ukesmeny")
         st.write("Sjekk at Google Sheet er delt med service account!")
+        return
+    
+
+    for meal in meals:
+        dag = meal.get('Dag', '')
+        middag = meal.get('Middag', '')
+        
+
+        from datetime import datetime
+        today = datetime.now().strftime("%A")
+        norwegian_days = {
+            'Monday': 'Mandag',
+            'Tuesday': 'Tirsdag',
+            'Wednesday': 'Onsdag',
+            'Thursday': 'Torsdag',
+            'Friday': 'Fredag',
+            'Saturday': 'Lørdag',
+            'Sunday': 'Søndag'
+        }
+        today_norwegian = norwegian_days.get(today, '')
+        
+        if dag == today_norwegian:
+            st.success(f"**{dag}**: {middag} 🍴")
+        else:
+            st.write(f"**{dag}**: {middag}")

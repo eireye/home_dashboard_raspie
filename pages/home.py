@@ -7,7 +7,7 @@ import pytz
 def show():
     st.title("🏠 Hjem")
     
-    # Tre kolonner: Vær, Kalender, Middag
+
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -23,7 +23,6 @@ def show():
         show_todays_meal()
 
 def show_todays_weather():
-    """Viser dagens vær - kompakt versjon"""
     try:
         from utils.weather_api import get_weather
         from lists.weather_emoji import weather_emoji
@@ -49,11 +48,11 @@ def show_todays_weather():
         symbol_base = weather_symbol.replace('_day', '').replace('_night', '')
         norwegian_name = weather_norwegian.get(symbol_base, weather_symbol)
         
-        # Vis temperatur og vær
+
         st.markdown(f"## {emoji} {temp_now}°C")
         st.write(f"**{norwegian_name}**")
         
-        # Min/max i dag
+
         today_temps = []
         today = date.today()
         for i in range(24):
@@ -70,7 +69,7 @@ def show_todays_weather():
         st.error("Kunne ikke laste vær")
 
 def show_todays_calendar():
-    """Viser dagens kalender - kompakt versjon"""
+
     
     try:
         from pages.calendar import get_calendar_events
@@ -78,34 +77,40 @@ def show_todays_calendar():
         all_events = get_calendar_events()
         
         if not all_events:
-            st.warning("Kunne ikke laste kalender")
+            st.warning("Kunne ikke laste")
             return
         
-        # Filtrer bare dagens events
+
         today = date.today()
-        todays_events = [e for e in all_events if (isinstance(e['start'], datetime) and e['start'].date() == today) or (isinstance(e['start'], date) and e['start'] == today)]
+        todays_events = []
+        
+        for e in all_events:
+            if e['is_allday']:
+                event_date = e['start']
+            else:
+                event_date = e['start'].date()
+            
+            if event_date == today:
+                todays_events.append(e)
         
         if todays_events:
             for event in todays_events:
-                dt = event['start']
-                
-                # ✅ Sjekk om det er datetime (med tid) eller bare date (heldagsevent)
-                if isinstance(dt, datetime):
-                    time_str = dt.strftime("%H:%M")
-                    if event.get('is_birthday'):
-                        st.success(f"🎉 **{time_str}** - {event['title']}")
-                    else:
-                        st.write(f"🕐 **{time_str}** - {event['title']}")
-                else:  # Heldagsevent (date, ikke datetime)
+                if event['is_allday']:
                     if event.get('is_birthday'):
                         st.success(f"🎂 **{event['title']}**")
                     else:
                         st.write(f"📅 **{event['title']}**")
+                else:
+                    time_str = event['start'].strftime("%H:%M")
+                    if event.get('is_birthday'):
+                        st.success(f"🎉 **{time_str}**\n{event['title']}")
+                    else:
+                        st.write(f"🕐 **{time_str}**\n{event['title']}")
         else:
             st.info("Ingen hendelser")
             
     except Exception as e:
-        st.error(f"Kalenderfeil: {e}")
+        st.error(f"Feil: {e}")
 
 def show_todays_meal():
     """Viser dagens middag fra Google Sheets"""
@@ -118,7 +123,7 @@ def show_todays_meal():
             st.info("Ingen meny")
             return
         
-        # Finn dagens middag
+
         from datetime import datetime
         today = datetime.now().strftime("%A")
         norwegian_days = {
@@ -139,8 +144,7 @@ def show_todays_meal():
                 break
         
         if todays_meal:
-            st.markdown(f"## 🍴")
-            st.write(f"**{todays_meal}**")
+            st.markdown(f"## {todays_meal}")
         else:
             st.info("Ikke planlagt")
             

@@ -5,9 +5,9 @@ import caldav
 from datetime import datetime, timedelta, date
 import pytz
 
-@st.cache_data(ttl=300)  # Cache i 5 minutter
+@st.cache_data(ttl=300)
 def get_calendar_events():
-    """Henter kalender-events med caching"""
+
     try:
         load_dotenv()
         url = "https://caldav.icloud.com"
@@ -53,19 +53,33 @@ def get_calendar_events():
                         
                         is_birthday = 'bursdag' in summary.lower() or 'birthday' in summary.lower() or '🎂' in summary or '🎉' in summary
                         
+
+                        is_allday = isinstance(dtstart, date) and not isinstance(dtstart, datetime)
+                        
+
+                        if is_allday:
+                            dtstart_sort = datetime.combine(dtstart, datetime.min.time())
+                            dtstart_sort = oslo_tz.localize(dtstart_sort)
+                        else:
+                            dtstart_sort = dtstart
+                        
                         all_events.append({
                             'title': summary,
-                            'start': dtstart,
+                            'start': dtstart,  
+                            'start_sort': dtstart_sort, 
                             'calendar': calendar.name,
-                            'is_birthday': is_birthday
+                            'is_birthday': is_birthday,
+                            'is_allday': is_allday
                         })
-                    except:
+                    except Exception as e:
+                        # Skip events som feiler
                         continue
                         
             except:
                 continue
         
-        all_events.sort(key=lambda x: x['start'])
+        # Sorter etter start_sort
+        all_events.sort(key=lambda x: x['start_sort'])
         return all_events
         
     except Exception as e:
@@ -74,7 +88,6 @@ def get_calendar_events():
 def show():
     st.title("📅 Kalender")
     
-    # Hent events (cached)
     all_events = get_calendar_events()
     
     if not all_events:
@@ -83,55 +96,63 @@ def show():
     
     # Del opp i dagens og fremtidige
     today = date.today()
-    todays_events = [e for e in all_events if (isinstance(e['start'], datetime) and e['start'].date() == today) or (isinstance(e['start'], date) and e['start'] == today)]
-    upcoming_events = [e for e in all_events if e not in todays_events]
+    todays_events = []
+    upcoming_events = []
+    
+    for e in all_events:
+        if e['is_allday']:
+            event_date = e['start']  # Allerede date
+        else:
+            event_date = e['start'].date()
+        
+        if event_date == today:
+            todays_events.append(e)
+        elif event_date > today:
+            upcoming_events.append(e)
     
     # Vis bursdager først
     birthdays = [e for e in all_events if e['is_birthday']]
     if birthdays:
         st.markdown("### 🎉 Kommende bursdager!")
         for event in birthdays[:3]:
-            dt = event['start']
-            if isinstance(dt, datetime):
-                date_str = dt.strftime("%d.%m")
+            if event['is_allday']:
+                date_str = event['start'].strftime("%d.%m")
             else:
-                date_str = dt.strftime("%d.%m")
+                date_str = event['start'].strftime("%d.%m")
             
             st.success(f"🎂 **{event['title']}** - {date_str}")
         st.divider()
     
-    # Vis dagens hendelser
+
     st.subheader("I dag")
     if todays_events:
         for event in todays_events:
-            dt = event['start']
-            if isinstance(dt, datetime):
-                time_str = dt.strftime("%H:%M")
+            if event['is_allday']:
+                if event['is_birthday']:
+                    st.success(f"🎂 **{event['title']}**")
+                else:
+                    st.write(f"📅 **{event['title']}**")
+            else:
+                # Event med tid
+                time_str = event['start'].strftime("%H:%M")
                 if event['is_birthday']:
                     st.success(f"🎉 **{time_str}** - {event['title']}")
                 else:
                     st.write(f"🕐 **{time_str}** - {event['title']}")
-            else:
-                if event['is_birthday']:
-                    st.success(f"🎂 {event['title']}")
-                else:
-                    st.write(f"📅 {event['title']}")
     else:
         st.info("Ingen hendelser i dag")
     
-    # Vis neste 7 dager
+
     st.divider()
     st.subheader("Neste 7 dager")
     
     if upcoming_events:
         current_date = None
         for event in upcoming_events:
-            dt = event['start']
-            
-            if isinstance(dt, datetime):
-                event_date = dt.date()
+            if event['is_allday']:
+                event_date = event['start']
             else:
-                event_date = dt
+                event_date = event['start'].date()
             
             if event_date != current_date:
                 current_date = event_date
@@ -139,16 +160,17 @@ def show():
                 date_str = event_date.strftime("%d.%m")
                 st.write(f"### {day_name} {date_str}")
             
-            if isinstance(dt, datetime):
-                time_str = dt.strftime("%H:%M")
+            if event['is_allday']:
+
+                if event['is_birthday']:
+                    st.success(f"  🎂 **{event['title']}**")
+                else:
+                    st.write(f"  📅 **{event['title']}**")
+            else:
+                time_str = event['start'].strftime("%H:%M")
                 if event['is_birthday']:
                     st.success(f"  🎉 **{time_str}** - {event['title']}")
                 else:
                     st.write(f"  🕐 **{time_str}** - {event['title']}")
-            else:
-                if event['is_birthday']:
-                    st.success(f"  🎂 {event['title']}")
-                else:
-                    st.write(f"  📅 {event['title']}")
     else:
         st.info("Ingen kommende hendelser")

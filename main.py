@@ -2,23 +2,23 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 import time
 
-# Auto-refresh hver 60 sekunder
+
 st_autorefresh(interval=60000, key="page_refresh")
 
-# Initialiser session state
+
 if 'page' not in st.session_state:
-    st.session_state.page = 'home'  # ✅ Start på home
+    st.session_state.page = 'home'
     
 if 'last_interaction' not in st.session_state:
     st.session_state.last_interaction = time.time()
 
-# Sjekk om vi skal tilbake til home
+
 if st.session_state.page != 'home':
     if time.time() - st.session_state.last_interaction > 60:
         st.session_state.page = 'home'
 
-# Navigation knapper
-col1, col2, col3, col4 = st.columns(4)  # ✅ 4 knapper
+
+col1, col2, col3, col4 = st.columns(4)  
 with col1:
     if st.button("🏠 Hjem"):
         st.session_state.page = 'home'
@@ -38,7 +38,7 @@ with col4:
 
 st.divider()
 
-# Vis riktig side
+
 if st.session_state.page == 'home':
     import pages.home as home
     home.show()
