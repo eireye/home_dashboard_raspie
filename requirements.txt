@@ -1,8 +1,12 @@
 streamlit
-requests
 streamlit-autorefresh
+requests
 pandas
 pytz
 plotly
 caldav
-python-dotenvvobject
+python-dotenv
+vobject
+gspread
+oauth2client
+feedparser

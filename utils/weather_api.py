@@ -1,11 +1,19 @@
 import streamlit as st
 import requests
+import os
+from dotenv import load_dotenv
 
-@st.cache_data(ttl=600)  
+load_dotenv()
+
+# Configurable location - defaults to Oslo
+WEATHER_LAT = os.getenv('WEATHER_LAT', '59.91')
+WEATHER_LON = os.getenv('WEATHER_LON', '10.75')
+
+@st.cache_data(ttl=600)
 def get_weather():
-    """Henter værdata - cached i 10 minutter"""
+    """Henter værdata fra yr.no/met.no - cached i 10 minutter"""
     response = requests.get(
-        "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=59.91&lon=10.75",
-        headers={"User-Agent": "MyWeatherDashboard/1.0"}
+        f"https://api.met.no/weatherapi/locationforecast/2.0/compact?lat={WEATHER_LAT}&lon={WEATHER_LON}",
+        headers={"User-Agent": "HomeDashboard/1.0"}
     )
     return response.json()

@@ -2,6 +2,78 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 import time
 
+# Page config for 7-inch touchscreen (800x480)
+st.set_page_config(
+    page_title="Dashboard",
+    page_icon="🏠",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# Custom CSS for Raspberry Pi 7" touchscreen
+st.markdown("""
+<style>
+    /* Hide Streamlit branding and menu for kiosk mode */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+
+    /* Reduce top padding */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    /* Larger touch-friendly buttons */
+    .stButton > button {
+        width: 100%;
+        height: 50px;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 10px;
+    }
+
+    /* Smaller headings to save space */
+    h1 {
+        font-size: 1.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    h2 {
+        font-size: 1.2rem !important;
+    }
+    h3 {
+        font-size: 1rem !important;
+    }
+
+    /* Compact metrics */
+    [data-testid="stMetricValue"] {
+        font-size: 1.5rem;
+    }
+
+    /* Reduce spacing between elements */
+    .element-container {
+        margin-bottom: 0.25rem;
+    }
+
+    /* Smaller dividers */
+    hr {
+        margin: 0.5rem 0;
+    }
+
+    /* Compact expanders */
+    .streamlit-expanderHeader {
+        font-size: 0.9rem;
+    }
+
+    /* Touch-friendly tabs */
+    .stTabs [data-baseweb="tab"] {
+        height: 40px;
+        font-size: 14px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 st_autorefresh(interval=60000, key="page_refresh")
 
@@ -18,22 +90,30 @@ if st.session_state.page != 'home':
         st.session_state.page = 'home'
 
 
-col1, col2, col3, col4 = st.columns(4)  
+col1, col2, col3, col4, col5, col6 = st.columns(6)
 with col1:
-    if st.button("🏠 Hjem"):
+    if st.button("🏠"):
         st.session_state.page = 'home'
         st.session_state.last_interaction = time.time()
 with col2:
-    if st.button("🌤️ Vær"):
+    if st.button("🌤️"):
         st.session_state.page = 'weather'
         st.session_state.last_interaction = time.time()
 with col3:
-    if st.button("📅 Kalender"):
+    if st.button("📅"):
         st.session_state.page = 'calendar'
         st.session_state.last_interaction = time.time()
 with col4:
-    if st.button("🍽️ Middag"):
+    if st.button("🍽️"):
         st.session_state.page = 'meals'
+        st.session_state.last_interaction = time.time()
+with col5:
+    if st.button("📰"):
+        st.session_state.page = 'news'
+        st.session_state.last_interaction = time.time()
+with col6:
+    if st.button("🚇"):
+        st.session_state.page = 'transport'
         st.session_state.last_interaction = time.time()
 
 st.divider()
@@ -54,3 +134,11 @@ elif st.session_state.page == 'calendar':
 elif st.session_state.page == 'meals':
     import pages.meals as meals
     meals.show()
+
+elif st.session_state.page == 'news':
+    import pages.news as news
+    news.show()
+
+elif st.session_state.page == 'transport':
+    import pages.transport as transport
+    transport.show()

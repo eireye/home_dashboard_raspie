@@ -3,24 +3,36 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime, date
 import pytz
+from lists.english_norwegian import norwegian_days
 
 def show():
-    st.title("🏠 Hjem")
-    
+    # Compact layout for 7" touchscreen (800x480)
 
+    # Top row: Weather, Meal, Transport
     col1, col2, col3 = st.columns(3)
-    
+
     with col1:
-        st.subheader("☀️ Været i dag")
+        st.markdown("**☀️ Vær**")
         show_todays_weather()
-    
+
     with col2:
-        st.subheader("📅 I dag")
-        show_todays_calendar()
-    
-    with col3:
-        st.subheader("🍽️ Middag")
+        st.markdown("**🍽️ Middag**")
         show_todays_meal()
+
+    with col3:
+        st.markdown("**🚇 Avganger**")
+        show_next_transport()
+
+    # Bottom row: Calendar and News
+    col4, col5 = st.columns(2)
+
+    with col4:
+        st.markdown("**📅 I dag**")
+        show_todays_calendar()
+
+    with col5:
+        st.markdown("**📰 Nyheter**")
+        show_top_news()
 
 def show_todays_weather():
     try:
@@ -49,9 +61,7 @@ def show_todays_weather():
         norwegian_name = weather_norwegian.get(symbol_base, weather_symbol)
         
 
-        st.markdown(f"## {emoji} {temp_now}°C")
-        st.write(f"**{norwegian_name}**")
-        
+        st.markdown(f"### {emoji} {temp_now}°C - {norwegian_name}")
 
         today_temps = []
         today = date.today()
@@ -61,9 +71,9 @@ def show_todays_weather():
                 dt = datetime.fromisoformat(ts['time'].replace('Z', '+00:00')).astimezone(oslo_tz)
                 if dt.date() == today:
                     today_temps.append(ts['data']['instant']['details']['air_temperature'])
-        
+
         if today_temps:
-            st.write(f"🔵 {min(today_temps)}°C | 🔴 {max(today_temps)}°C")
+            st.caption(f"↓{min(today_temps)}° ↑{max(today_temps)}°")
         
     except Exception as e:
         st.error("Kunne ikke laste vær")
@@ -94,20 +104,17 @@ def show_todays_calendar():
                 todays_events.append(e)
         
         if todays_events:
-            for event in todays_events:
+            for event in todays_events[:4]:  # Max 4 events on small screen
+                title = event['title'][:30] + "..." if len(event['title']) > 30 else event['title']
                 if event['is_allday']:
-                    if event.get('is_birthday'):
-                        st.success(f"🎂 **{event['title']}**")
-                    else:
-                        st.write(f"📅 **{event['title']}**")
+                    icon = "🎂" if event.get('is_birthday') else "📅"
+                    st.caption(f"{icon} {title}")
                 else:
                     time_str = event['start'].strftime("%H:%M")
-                    if event.get('is_birthday'):
-                        st.success(f"🎉 **{time_str}**\n{event['title']}")
-                    else:
-                        st.write(f"🕐 **{time_str}**\n{event['title']}")
+                    icon = "🎉" if event.get('is_birthday') else "🕐"
+                    st.caption(f"{icon} {time_str} {title}")
         else:
-            st.info("Ingen hendelser")
+            st.caption("Ingen hendelser")
             
     except Exception as e:
         st.error(f"Feil: {e}")
@@ -124,17 +131,7 @@ def show_todays_meal():
             return
         
 
-        from datetime import datetime
         today = datetime.now().strftime("%A")
-        norwegian_days = {
-            'Monday': 'Mandag',
-            'Tuesday': 'Tirsdag',
-            'Wednesday': 'Onsdag',
-            'Thursday': 'Torsdag',
-            'Friday': 'Fredag',
-            'Saturday': 'Lørdag',
-            'Sunday': 'Søndag'
-        }
         today_norwegian = norwegian_days.get(today, '')
         
         todays_meal = None
@@ -144,9 +141,48 @@ def show_todays_meal():
                 break
         
         if todays_meal:
-            st.markdown(f"## {todays_meal}")
+            st.markdown(f"### {todays_meal}")
         else:
-            st.info("Ikke planlagt")
+            st.caption("Ikke planlagt")
             
     except Exception as e:
         st.info("Middag ikke tilgjengelig")
+
+def show_top_news():
+    """Viser topp nyheter med sammendrag - compact for 7" screen"""
+    try:
+        from pages.news import get_top_headlines
+
+        headlines = get_top_headlines(1)  # 1 from each source for home
+
+        if headlines:
+            for article in headlines:
+                title = article['title'][:50] + "..." if len(article['title']) > 50 else article['title']
+                st.caption(f"{article['source']} **{title}**")
+                if article.get('summary'):
+                    summary = article['summary'][:80] + "..." if len(article['summary']) > 80 else article['summary']
+                    st.caption(f"_{summary}_")
+        else:
+            st.caption("Ingen nyheter")
+
+    except Exception:
+        st.caption("Nyheter utilgjengelig")
+
+def show_next_transport():
+    """Viser neste avganger - compact for 7" screen"""
+    try:
+        from pages.transport import get_next_departures, get_transport_icon, format_time_until
+
+        departures = get_next_departures(4)
+
+        if departures:
+            for dep in departures:
+                icon = get_transport_icon(dep['mode'])
+                time_str = format_time_until(dep['time'])
+                dest = dep['destination'][:12] + ".." if len(dep['destination']) > 12 else dep['destination']
+                st.caption(f"{icon} {dep['line']} {dest} `{time_str}`")
+        else:
+            st.caption("Ingen avganger")
+
+    except Exception:
+        st.caption("Transport utilgjengelig")

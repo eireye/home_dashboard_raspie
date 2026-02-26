@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from lists.english_norwegian import norwegian_days
 
 @st.cache_data(ttl=600)  # Cache i 10 minutter
 def get_meals():
@@ -41,15 +42,6 @@ def show():
 
         from datetime import datetime
         today = datetime.now().strftime("%A")
-        norwegian_days = {
-            'Monday': 'Mandag',
-            'Tuesday': 'Tirsdag',
-            'Wednesday': 'Onsdag',
-            'Thursday': 'Torsdag',
-            'Friday': 'Fredag',
-            'Saturday': 'Lørdag',
-            'Sunday': 'Søndag'
-        }
         today_norwegian = norwegian_days.get(today, '')
         
         if dag == today_norwegian:
