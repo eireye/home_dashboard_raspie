@@ -50,8 +50,12 @@ def show():
         nrk_news = get_news(NEWS_FEEDS['nrk'])
 
         if nrk_news:
-            for article in nrk_news[:3]:
-                st.markdown(f"**{article['title']}**")
+            for article in nrk_news[:5]:
+                link = article.get('link', '')
+                if link:
+                    st.markdown(f"**[{article['title']}]({link})**")
+                else:
+                    st.markdown(f"**{article['title']}**")
                 if article['summary']:
                     st.caption(clean_summary(article['summary']))
                 st.markdown("---")
@@ -63,36 +67,32 @@ def show():
         bbc_news = get_news(NEWS_FEEDS['bbc_world'])
 
         if bbc_news:
-            for article in bbc_news[:3]:
-                st.markdown(f"**{article['title']}**")
+            for article in bbc_news[:5]:
+                link = article.get('link', '')
+                if link:
+                    st.markdown(f"**[{article['title']}]({link})**")
+                else:
+                    st.markdown(f"**{article['title']}**")
                 if article['summary']:
                     st.caption(clean_summary(article['summary']))
                 st.markdown("---")
         else:
             st.caption("Kunne ikke laste")
 
-def get_top_headlines(count=2):
-    """Get top headlines for home page - Norway and World with summaries"""
-    headlines = []
+    st.markdown("<hr style='margin:4px 0'>", unsafe_allow_html=True)
+    if st.button("🏠 Tilbake til dashbord"):
+        st.session_state.page = 'home'
+        st.rerun()
 
-    # Norwegian news
+def get_top_headlines(count=3):
+    """Get top NRK headlines for home page"""
+    headlines = []
     nrk = get_news(NEWS_FEEDS['nrk'])
     if nrk:
         for article in nrk[:count]:
             headlines.append({
                 'title': article['title'],
-                'summary': clean_summary(article['summary']) if article['summary'] else '',
+                'link': article.get('link', ''),
                 'source': '🇳🇴'
             })
-
-    # World news
-    bbc = get_news(NEWS_FEEDS['bbc_world'])
-    if bbc:
-        for article in bbc[:count]:
-            headlines.append({
-                'title': article['title'],
-                'summary': clean_summary(article['summary']) if article['summary'] else '',
-                'source': '🌍'
-            })
-
     return headlines
