@@ -10,3 +10,5 @@ vobject
 gspread
 oauth2client
 feedparser
+opencv-python-headless
+anthropic
