@@ -1,15 +1,13 @@
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
-from datetime import datetime
+from datetime import datetime, date
 import pytz
-import pandas as pd
 from lists.english_norwegian import weather_norwegian, norwegian_days
 from lists.weather_emoji import weather_emoji
 from utils.weather_api import get_weather
 
 def show():
     st_autorefresh(interval=600000, key="weather_refresh")
-
     data = get_weather()
     oslo_tz = pytz.timezone('Europe/Oslo')
     now_oslo = datetime.now(oslo_tz)
@@ -24,73 +22,54 @@ def show():
     current = data['properties']['timeseries'][current_index]
     temp_now = current['data']['instant']['details']['air_temperature']
     weather_symbol = current['data']['next_1_hours']['summary']['symbol_code']
-
-    emoji = weather_emoji.get(weather_symbol, '🌡️')
+    emoji = weather_emoji.get(weather_symbol, '')
     symbol_base = weather_symbol.replace('_day', '').replace('_night', '')
     norwegian_name = weather_norwegian.get(symbol_base, weather_symbol)
 
-    # Compact header for 7" screen
-    col_now, col_info = st.columns([1, 2])
-    with col_now:
-        st.metric(label="Nå", value=f"{temp_now}°C")
-    with col_info:
-        st.markdown(f"### {emoji} {norwegian_name}")
+    st.markdown(f"## {emoji} {temp_now}°C — {norwegian_name}")
 
-    # 12-hour chart (more compact for small screen)
-    hours = []
-    temps = []
+    # Min/max today
+    today_temps = []
+    today = date.today()
+    for i in range(24):
+        if current_index + i < len(data['properties']['timeseries']):
+            ts = data['properties']['timeseries'][current_index + i]
+            dt = datetime.fromisoformat(ts['time'].replace('Z', '+00:00')).astimezone(oslo_tz)
+            if dt.date() == today:
+                today_temps.append(ts['data']['instant']['details']['air_temperature'])
+    if today_temps:
+        st.caption(f"↓ {min(today_temps)}°C  |  ↑ {max(today_temps)}°C")
 
-    for i in range(current_index, min(current_index + 12, len(data['properties']['timeseries']))):
+    st.divider()
+
+    # Next 12 hours as simple text
+    st.markdown("**Neste 12 timer**")
+    cols = st.columns(6)
+    for idx, i in enumerate(range(current_index, min(current_index + 6, len(data['properties']['timeseries'])))):
         hour_data = data['properties']['timeseries'][i]
-        time_obj = datetime.fromisoformat(hour_data['time'].replace('Z', '+00:00'))
-        time_oslo = time_obj.astimezone(oslo_tz)
-        hour = time_oslo.strftime("%H")
+        time_obj = datetime.fromisoformat(hour_data['time'].replace('Z', '+00:00')).astimezone(oslo_tz)
         temp = hour_data['data']['instant']['details']['air_temperature']
+        symbol = hour_data['data'].get('next_1_hours', {}).get('summary', {}).get('symbol_code', '')
+        em = weather_emoji.get(symbol, '')
+        with cols[idx]:
+            st.caption(time_obj.strftime("%H:%M"))
+            st.markdown(f"**{temp}°**")
+            st.caption(em)
 
-        hours.append(hour)
-        temps.append(temp)
-
-    chart_data = pd.DataFrame({
-        'Tid': hours,
-        'Temp': temps
-    })
-    chart_data = chart_data.set_index('Tid')
-
-    st.line_chart(chart_data, height=150)
-
-    min_temp = min(temps)
-    max_temp = max(temps)
-    st.caption(f"↓ {min_temp}°C  |  ↑ {max_temp}°C")
+    st.divider()
 
     # 3-day forecast
-    st.markdown("**Neste dager**")
-
-    # Compact 3-day forecast in columns
+    st.markdown("**3 dager**")
     day_cols = st.columns(3)
-
     for idx, i in enumerate([24, 48, 72]):
         if i >= len(data['properties']['timeseries']):
             continue
-
         day_data = data['properties']['timeseries'][i]
         temp = day_data['data']['instant']['details']['air_temperature']
-
-        if 'next_6_hours' in day_data['data']:
-            symbol = day_data['data']['next_6_hours']['summary']['symbol_code']
-        elif 'next_12_hours' in day_data['data']:
-            symbol = day_data['data']['next_12_hours']['summary']['symbol_code']
-        elif 'next_1_hours' in day_data['data']:
-            symbol = day_data['data']['next_1_hours']['summary']['symbol_code']
-        else:
-            symbol = 'clearsky_day'
-
-        time_string = day_data['time']
-        date_obj = datetime.fromisoformat(time_string.replace('Z', '+00:00'))
-        day_name_english = date_obj.strftime("%A")
-        day_name_norwegian = norwegian_days[day_name_english][:3]  # Short day name
-
-        emoji_forecast = weather_emoji.get(symbol, '🌡️')
-
+        symbol = (day_data['data'].get('next_6_hours') or day_data['data'].get('next_12_hours') or day_data['data'].get('next_1_hours', {})).get('summary', {}).get('symbol_code', '')
+        date_obj = datetime.fromisoformat(day_data['time'].replace('Z', '+00:00'))
+        day_name = norwegian_days.get(date_obj.strftime("%A"), '')[:3]
+        em = weather_emoji.get(symbol, '')
         with day_cols[idx]:
-            st.markdown(f"**{day_name_norwegian}**")
-            st.markdown(f"{emoji_forecast} {temp}°C")
+            st.markdown(f"**{day_name}**")
+            st.markdown(f"{em} {temp}°C")
