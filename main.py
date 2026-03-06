@@ -20,19 +20,25 @@ st.markdown("""
 
     /* Reduce top padding */
     .block-container {
-        padding-top: 1rem;
+        padding-top: 0.25rem;
         padding-bottom: 0rem;
         padding-left: 1rem;
         padding-right: 1rem;
     }
 
-    /* Larger touch-friendly buttons */
+    /* Compact touch-friendly buttons */
     .stButton > button {
         width: 100%;
-        height: 50px;
-        font-size: 16px;
+        height: 38px;
+        font-size: 14px;
         font-weight: bold;
         border-radius: 10px;
+    }
+
+    /* Collapse gap around nav button row */
+    [data-testid="stHorizontalBlock"] {
+        gap: 0.25rem;
+        margin-bottom: 0;
     }
 
     /* Smaller headings to save space */
@@ -116,7 +122,7 @@ with col6:
         st.session_state.page = 'transport'
         st.session_state.last_interaction = time.time()
 
-st.divider()
+st.markdown("<hr style='margin:2px 0'>", unsafe_allow_html=True)
 
 
 if st.session_state.page == 'home':

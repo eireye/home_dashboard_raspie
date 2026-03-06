@@ -26,7 +26,8 @@ def get_calendar_events():
         all_events = []
         
         for calendar in calendars:
-            if "minner" in calendar.name.lower():
+            cal_name = calendar.name.lower()
+            if cal_name == "minner" or cal_name == "reminders":
                 continue
                 
             try:
@@ -51,7 +52,14 @@ def get_calendar_events():
                         if dtstart is None:
                             continue
                         
-                        is_birthday = 'bursdag' in summary.lower() or 'birthday' in summary.lower() or '🎂' in summary or '🎉' in summary
+                        is_birthday = (
+                            'bursdag' in summary.lower() or
+                            'birthday' in summary.lower() or
+                            "'s birthday" in summary.lower() or
+                            '🎂' in summary or
+                            '🎉' in summary or
+                            'Bursdager' in calendar.name
+                        )
                         
 
                         is_allday = isinstance(dtstart, date) and not isinstance(dtstart, datetime)

@@ -1,5 +1,5 @@
 import streamlit as st
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import pytz
 from lists.english_norwegian import norwegian_days
 
@@ -11,12 +11,12 @@ def show():
         show_todays_weather()
 
     with col2:
-        st.markdown("**Middag**")
-        show_todays_meal()
-
-    with col3:
         st.markdown("**I dag**")
         show_todays_calendar()
+
+    with col3:
+        st.markdown("**Middag**")
+        show_todays_meal()
 
 def show_todays_weather():
     try:
@@ -61,16 +61,51 @@ def show_todays_calendar():
             st.caption("Ingen hendelser")
             return
         today = date.today()
-        todays_events = [e for e in all_events if (e['start'] if e['is_allday'] else e['start'].date()) == today]
+        week_end = today + timedelta(days=7)
+
+        # Upcoming birthdays within 7 days
+        upcoming_birthdays = []
+        for e in all_events:
+            e_date = e['start'] if e['is_allday'] else e['start'].date()
+            if e.get('is_birthday') and e_date >= today and e_date <= week_end:
+                upcoming_birthdays.append(e)
+        for bday in upcoming_birthdays[:2]:
+            b_date = bday['start'] if bday['is_allday'] else bday['start'].date()
+            title = bday['title'][:22] + ".." if len(bday['title']) > 22 else bday['title']
+            if b_date == today:
+                st.caption(f"🎂 **{title}**")
+            else:
+                st.caption(f"🎂 {b_date.strftime('%d.%m')} {title}")
+
+        # Today's non-birthday events
+        todays_events = [
+            e for e in all_events
+            if (e['start'] if e['is_allday'] else e['start'].date()) == today
+            and not e.get('is_birthday')
+        ]
         if todays_events:
-            for event in todays_events[:4]:
-                title = event['title'][:25] + ".." if len(event['title']) > 25 else event['title']
+            for event in todays_events[:3]:
+                title = event['title'][:22] + ".." if len(event['title']) > 22 else event['title']
                 if event['is_allday']:
-                    st.caption(f"{'🎂' if event.get('is_birthday') else '📅'} {title}")
+                    st.caption(f"📅 {title}")
                 else:
                     st.caption(f"🕐 {event['start'].strftime('%H:%M')} {title}")
-        else:
+        elif not upcoming_birthdays:
             st.caption("Ingen hendelser")
+
+        # Up to 3 upcoming non-birthday events from the rest of the week
+        upcoming = [
+            e for e in all_events
+            if (e['start'] if e['is_allday'] else e['start'].date()) > today
+            and not e.get('is_birthday')
+        ]
+        for event in upcoming[:3]:
+            e_date = event['start'] if event['is_allday'] else event['start'].date()
+            title = event['title'][:20] + ".." if len(event['title']) > 20 else event['title']
+            if event['is_allday']:
+                st.caption(f"📅 {e_date.strftime('%d.%m')} {title}")
+            else:
+                st.caption(f"🕐 {e_date.strftime('%d.%m')} {event['start'].strftime('%H:%M')} {title}")
     except:
         st.caption("Ikke tilgjengelig")
 
