@@ -61,13 +61,14 @@ def show():
     # 3-day forecast
     st.markdown("**3 dager**")
     day_cols = st.columns(3)
-    for idx, i in enumerate([24, 48, 72]):
-        if i >= len(data['properties']['timeseries']):
+    for idx, offset in enumerate([24, 48, 72]):
+        target_idx = current_index + offset
+        if target_idx >= len(data['properties']['timeseries']):
             continue
-        day_data = data['properties']['timeseries'][i]
+        day_data = data['properties']['timeseries'][target_idx]
         temp = day_data['data']['instant']['details']['air_temperature']
         symbol = (day_data['data'].get('next_6_hours') or day_data['data'].get('next_12_hours') or day_data['data'].get('next_1_hours', {})).get('summary', {}).get('symbol_code', '')
-        date_obj = datetime.fromisoformat(day_data['time'].replace('Z', '+00:00'))
+        date_obj = datetime.fromisoformat(day_data['time'].replace('Z', '+00:00')).astimezone(oslo_tz)
         day_name = norwegian_days.get(date_obj.strftime("%A"), '')[:3]
         em = weather_emoji.get(symbol, '')
         with day_cols[idx]:

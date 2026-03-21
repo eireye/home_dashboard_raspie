@@ -31,7 +31,7 @@ def get_calendar_events():
                 continue
                 
             try:
-                events = calendar.date_search(start=start, end=end)
+                events = calendar.date_search(start=start, end=end, expand=True)
                 
                 for event in events:
                     try:

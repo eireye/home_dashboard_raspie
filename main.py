@@ -82,8 +82,8 @@ with col6:
         st.session_state.page = 'transport'
         st.session_state.last_interaction = time.time()
 with col7:
-    if st.button("🧾"):
-        st.session_state.page = 'receipts'
+    if st.button("🚗"):
+        st.session_state.page = 'car'
         st.session_state.last_interaction = time.time()
 
 st.markdown("<hr style='margin:2px 0'>", unsafe_allow_html=True)
@@ -106,6 +106,6 @@ elif st.session_state.page == 'news':
 elif st.session_state.page == 'transport':
     import pages.transport as transport
     transport.show()
-elif st.session_state.page == 'receipts':
-    import pages.receipts as receipts
-    receipts.show()
+elif st.session_state.page == 'car':
+    import pages.car as car
+    car.show()

@@ -15,9 +15,6 @@ def show():
         show_todays_calendar()
 
     with col3:
-        st.markdown("**Middag**")
-        show_todays_meal()
-        st.markdown("<hr style='margin:4px 0'>", unsafe_allow_html=True)
         show_top_news()
 
 def show_todays_weather():
@@ -142,22 +139,6 @@ def show_todays_calendar():
                 st.caption(f"📅 {e_date.strftime('%d.%m')} {title}")
             else:
                 st.caption(f"🕐 {e_date.strftime('%d.%m')} {event['start'].strftime('%H:%M')} {title}")
-    except:
-        st.caption("Ikke tilgjengelig")
-
-def show_todays_meal():
-    try:
-        from pages.meals import get_meals
-        meals = get_meals()
-        if not meals:
-            st.caption("Ikke planlagt")
-            return
-        today_norwegian = norwegian_days.get(datetime.now().strftime("%A"), '')
-        todays_meal = next((m.get('Middag') for m in meals if m.get('Dag') == today_norwegian), None)
-        if todays_meal:
-            st.markdown(f"**{todays_meal}**")
-        else:
-            st.caption("Ikke planlagt")
     except:
         st.caption("Ikke tilgjengelig")
 
