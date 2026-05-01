@@ -4,7 +4,7 @@ import pytz
 from lists.english_norwegian import norwegian_days
 
 def show():
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.markdown("**Vær**")
@@ -16,6 +16,11 @@ def show():
 
     with col3:
         show_top_news()
+
+    with col4:
+        st.markdown("**Pollen**")
+        from pages.pollen import render_home_widget
+        render_home_widget()
 
 def show_todays_weather():
     try:
