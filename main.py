@@ -55,7 +55,7 @@ if st.session_state.page != 'home':
     if time.time() - st.session_state.last_interaction > 60:
         st.session_state.page = 'home'
 
-col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
 
 with col1:
     if st.button("🏠"):
@@ -85,6 +85,10 @@ with col7:
     if st.button("🚗"):
         st.session_state.page = 'car'
         st.session_state.last_interaction = time.time()
+with col8:
+    if st.button("🌼"):
+        st.session_state.page = 'pollen'
+        st.session_state.last_interaction = time.time()
 
 st.markdown("<hr style='margin:2px 0'>", unsafe_allow_html=True)
 
@@ -109,3 +113,6 @@ elif st.session_state.page == 'transport':
 elif st.session_state.page == 'car':
     import pages.car as car
     car.show()
+elif st.session_state.page == 'pollen':
+    import pages.pollen as pollen
+    pollen.show()

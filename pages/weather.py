@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 from datetime import datetime, date
+from collections import defaultdict
 import pytz
 from lists.english_norwegian import weather_norwegian, norwegian_days
 from lists.weather_emoji import weather_emoji
@@ -58,19 +59,26 @@ def show():
 
     st.divider()
 
-    # 3-day forecast
+    # 3-day forecast: group entries by calendar date, pick the 3 next days.
+    # Fixed offsets ([24, 48, 72]) break when Met.no switches to 6-hour
+    # intervals after T+48h, causing day 2 and 3 to land weeks in the future.
     st.markdown("**3 dager**")
+    NORSKE_DAGER = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn']
+    day_buckets: dict = defaultdict(list)
+    for ts in data['properties']['timeseries']:
+        dt = datetime.fromisoformat(ts['time'].replace('Z', '+00:00')).astimezone(oslo_tz)
+        day_buckets[dt.date()].append((dt, ts))
+    sorted_dates = sorted(d for d in day_buckets if d > today)[:3]
     day_cols = st.columns(3)
-    for idx, offset in enumerate([24, 48, 72]):
-        target_idx = current_index + offset
-        if target_idx >= len(data['properties']['timeseries']):
-            continue
-        day_data = data['properties']['timeseries'][target_idx]
-        temp = day_data['data']['instant']['details']['air_temperature']
-        symbol = (day_data['data'].get('next_6_hours') or day_data['data'].get('next_12_hours') or day_data['data'].get('next_1_hours', {})).get('summary', {}).get('symbol_code', '')
-        date_obj = datetime.fromisoformat(day_data['time'].replace('Z', '+00:00')).astimezone(oslo_tz)
-        day_name = norwegian_days.get(date_obj.strftime("%A"), '')[:3]
+    for idx, target_date in enumerate(sorted_dates):
+        noon_dt, noon_ts = min(day_buckets[target_date], key=lambda x: abs(x[0].hour - 12))
+        temp = noon_ts['data']['instant']['details']['air_temperature']
+        symbol = (
+            noon_ts['data'].get('next_6_hours') or
+            noon_ts['data'].get('next_1_hours', {})
+        ).get('summary', {}).get('symbol_code', '')
         em = weather_emoji.get(symbol, '')
+        day_name = NORSKE_DAGER[target_date.weekday()]
         with day_cols[idx]:
             st.markdown(f"**{day_name}**")
             st.markdown(f"{em} {temp}°C")
